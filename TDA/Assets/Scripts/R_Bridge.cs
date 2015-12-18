@@ -5,6 +5,8 @@ using System.Text;
 using System.Diagnostics;
 
 public class R_Bridge : MonoBehaviour {
+	public bool verbose;
+
 	int currentFilter;
 
 	Process rProcess;
@@ -136,6 +138,8 @@ public class R_Bridge : MonoBehaviour {
 		if(rStreamWriter!=null) rStreamWriter.Close();
 		if(err!=null) err.Close();
 
+		//if(error) throw(new System.Exception("R BROKE"));
+
 		UnityEngine.Debug.Log("csv filtered!");
 		working = false;
 	}
@@ -226,12 +230,12 @@ public class R_Bridge : MonoBehaviour {
 
 			rOut.Append("\n" +
                     "[" + numOutputLines.ToString() + "] - " + outLine.Data);
-			UnityEngine.Debug.Log("[" + numOutputLines.ToString() + "] - " +outLine.Data);
+			if(verbose) UnityEngine.Debug.Log("[" + numOutputLines.ToString() + "] - " +outLine.Data);
 		}
 		else
 		{
 			string er = err.ReadLine();
-			if(!string.IsNullOrEmpty(er)) UnityEngine.Debug.Log("ERROR: "+err.ReadLine());
+			if(!string.IsNullOrEmpty(er) && er!="\n" && verbose) UnityEngine.Debug.Log("ERROR: "+err.ReadLine());
 		}
 	}
 
@@ -294,7 +298,6 @@ public class R_Bridge : MonoBehaviour {
 
 	void EndProcess(object sender, System.EventArgs e)
 	{
-		UnityEngine.Debug.Log("HAI");
 		processFinished = true;
 	}
 

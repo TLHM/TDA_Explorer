@@ -2,18 +2,37 @@
 using System.Collections;
 
 public class Controller : MonoBehaviour {
+	public static bool loaded;
+
 	//Pointers to other scripts
 	public R_Bridge r;
 	public ClusterMaster cm;
 	public NetworkBuilder nb;
+
+	//Prefab objects
+	public Transform nodeFab;
+	public Transform edgeFab;
 
 	public string dataFile;		/**< File path to the data file in question, relative to StreamingAssets, for now */
 
 	public Network n;		/**< The network that we build using, should be an existing obj in scene */
 	NetworkBuilder.Bucket[] buckets;
 	public int bucketNum;
+	public float epsilon;
 
 	bool processing;
+
+	//Loading GUI
+	public UnityEngine.UI.Text loadingMessage;
+	public RectTransform loadingBar;
+
+
+	void Start(){
+		ClusterMaster.nodeFab = nodeFab;
+		Node.edgeFab = edgeFab;
+
+		StartCoroutine(Test());
+	}
 
 	/**
 		Creates a new csv in Data/Temp that is ordered by the filter value, for simpler processing later
@@ -34,6 +53,8 @@ public class Controller : MonoBehaviour {
 	IEnumerator FilterData(int filterType)
 	{
 		processing = true;
+		loadingMessage.text = "Filtering Data...";
+
 		r.SetFilter(dataFile, filterType);
 
 		//Wait for completion
@@ -43,6 +64,7 @@ public class Controller : MonoBehaviour {
 		}
 
 		processing = false;
+		loadingMessage.text = "Done";
 	}
 
 	/**
@@ -60,12 +82,21 @@ public class Controller : MonoBehaviour {
 	IEnumerator BuildNetwork()
 	{
 		processing = true;
+		loadingMessage.text = "Building Network...";
 
 		buckets = new NetworkBuilder.Bucket[bucketNum];
 
 		for(int i=0;i<bucketNum;i++)
 		{
-			NetworkBuilder.Bucket b = new NetworkBuilder.Bucket();
+			buckets[i] = new NetworkBuilder.Bucket();
+		}
+
+		for(int i=0;i<bucketNum;i++)
+		{
+			loadingMessage.text = "Fetching Bucket No. "+i;
+			loadingBar.localScale = new Vector3(0,1,1);
+
+			NetworkBuilder.Bucket b = buckets[i];
 
 			//Fetch out bucket as a string of data through R
 			r.GetBucket(dataFile, i, bucketNum);
@@ -77,20 +108,55 @@ public class Controller : MonoBehaviour {
 
 			string[] data = r.GetData().Split("\n".ToCharArray());
 
-			//Work clustering magic
-			//push clusters as nodes into bucket
+			//Cluster the data points in the bucket
+			loadingMessage.text = "Clustering Bucket No. "+i;
+			yield return null;
 
-			buckets[i] = b;
+			cm.ClusterVietorisRips(data, b, epsilon, ClusterMaster.EuclidMetric);
+
+			while(!cm.Done())
+			{
+				loadingBar.localScale = new Vector3(cm.progress,1,1);
+				yield return null;
+			}
+
+			buckets[i] = cm.GetBuilt();
+			nb.ArrangeNodes(buckets[i].nodes, i);
+
+			yield return null;
 		}
 
 		//Got our buckets, pass to the network builder
-		nb.BuildFromBuckets(buckets, out n);
+		loadingMessage.text = "Connecting Nodes...";
+		loadingBar.localScale = new Vector3(0,1,1);
+		Debug.Log("Building Edges");
+
+		yield return null;
+
+		nb.BuildFromBuckets(buckets, n);
 
 		while(!nb.Done())
 		{
+			loadingBar.localScale = new Vector3(nb.progress,1,1);
 			yield return null;
 		}
 
 		processing = false;
+		loadingBar.localScale = Vector3.one;
+		loadingMessage.text = "Done";
+
+		loaded = true;
+	}
+
+	/**
+		Runs a test, going through the full process of creating a network
+	*/
+	IEnumerator Test()
+	{
+		Filter(0);
+
+		while(processing) yield return null;
+
+		GetNetwork();
 	}
 }
