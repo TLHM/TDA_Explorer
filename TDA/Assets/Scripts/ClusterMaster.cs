@@ -2,6 +2,9 @@
 using System.Collections;
 using System.Collections.Generic;
 
+/**
+	Clusters data points into nodes using a metric to judge "distance" between points.
+*/
 public class ClusterMaster : MonoBehaviour {
 	public static Transform nodeFab;
 	public float progress;
@@ -104,7 +107,7 @@ public class ClusterMaster : MonoBehaviour {
 				}
 
 				counter++;
-				if(counter>=8000)
+				if(counter>=1000)
 				{
 					yield return null;
 					counter=0;
@@ -120,8 +123,8 @@ public class ClusterMaster : MonoBehaviour {
 				nodeIndex[i]=b.nodes.Count;
 			}
 
-			counter+=10;
-			if(counter>=8000)
+			counter++;
+			if(counter>=1000)
 			{
 				yield return null;
 				counter=0;

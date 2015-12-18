@@ -17,12 +17,18 @@ public class Controller : MonoBehaviour {
 
 	public Network n;		/**< The network that we build using, should be an existing obj in scene */
 	NetworkBuilder.Bucket[] buckets;
+
+	//Small variables to tweak
 	public int bucketNum;
 	public float epsilon;
+	public float idealLen;
+
+	public bool relax;	/**< Do we use the positioning from the data, or relax it? */
 
 	bool processing;
 
 	//Loading GUI
+	public GameObject load;
 	public UnityEngine.UI.Text loadingMessage;
 	public RectTransform loadingBar;
 
@@ -30,6 +36,11 @@ public class Controller : MonoBehaviour {
 	void Start(){
 		ClusterMaster.nodeFab = nodeFab;
 		Node.edgeFab = edgeFab;
+		Node.mass = 1;
+		Node.forceScale = 1;
+
+		Edge.idealLen = idealLen;
+		Edge.idealLen2 = Edge.idealLen*Edge.idealLen;
 
 		StartCoroutine(Test());
 	}
@@ -145,7 +156,21 @@ public class Controller : MonoBehaviour {
 		loadingBar.localScale = Vector3.one;
 		loadingMessage.text = "Done";
 
+		load.SetActive(false);
+
 		loaded = true;
+
+		yield return null;
+
+		if(relax)
+		{
+			Debug.Log("Relaxing!");
+			yield return null;
+			n.Relax();
+
+			while(!n.Done()) yield return null;
+		}
+		Debug.Log("Finished!");
 	}
 
 	/**
