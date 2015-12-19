@@ -52,13 +52,35 @@ public class ClusterMaster : MonoBehaviour {
 		//Start at 1 to avoid the header
 		for(int i=1; i<l-1; i++)
 		{
-			if(data[i].Length<5) continue;
+			counter++;
+			if(counter>=4000)
+			{
+				yield return null;
+				counter=0;
+			}
+
+			if(data[i].Length<5)
+			{
+				Debug.LogError("data is nonexist? "+data[i]);
+				continue;
+			}
 
 			bool gotLinked = false;
 
 			for(int j=i+1; j<l; j++)
 			{
-				if(data[j].Length<5) continue;
+				counter++;
+				if(counter>=4000)
+				{
+					yield return null;
+					counter=0;
+				}
+
+				if(data[j].Length<5)
+				{
+					Debug.LogError("data is nonexist? "+data[j]);
+					continue;
+				}
 
 				float met = m(data[i],data[j]);
 
@@ -105,13 +127,6 @@ public class ClusterMaster : MonoBehaviour {
 						nodeIndex[j]=id;
 					}
 				}
-
-				counter++;
-				if(counter>=1000)
-				{
-					yield return null;
-					counter=0;
-				}
 			}
 
 			progress += 1f/l;
@@ -121,13 +136,6 @@ public class ClusterMaster : MonoBehaviour {
 			{
 				b.nodes.Add(NewNode(data[i], i));
 				nodeIndex[i]=b.nodes.Count;
-			}
-
-			counter++;
-			if(counter>=1000)
-			{
-				yield return null;
-				counter=0;
 			}
 		}
 
